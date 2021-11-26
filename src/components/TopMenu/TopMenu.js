@@ -1,0 +1,52 @@
+import React from 'react';
+import NavDropdown from 'react-bootstrap/NavDropdown';
+import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faHome, faUser, faSignOutAlt } from '@fortawesome/free-solid-svg-icons'
+import { useHistory } from 'react-router-dom';
+
+function TopMenu(props) {
+
+    const user = <FontAwesomeIcon icon={faUser} /> ;
+    const username = "dhanuroutu";
+    const title = props.title;
+    let history = useHistory();
+
+    function logOut(){
+        localStorage.clear();
+        //console.log("history::::", history);
+        history.push("/login");
+    }
+
+    return (
+        <Navbar bg="primary gradient" expand="lg" sticky="top">
+            <Navbar.Brand href="#home"><h2  className="title">Daily Labour</h2></Navbar.Brand>
+            <Navbar.Toggle aria-controls="basic-navbar-nav" />
+            <Navbar.Collapse id="basic-navbar-nav">
+                <Nav className="me-auto">
+                    <Nav.Link href="/dashboard" className="menu-link">Dashboard</Nav.Link>
+                    <Nav.Link href="/dailylabour" className="menu-link">Daily Labour</Nav.Link>
+                    <NavDropdown title="Employees" className="menu-link" color="white">
+                        <NavDropdown.Item href="/employees">List</NavDropdown.Item>
+                        <NavDropdown.Divider />
+                        <NavDropdown.Item href="/employeeType">Employee Type</NavDropdown.Item>
+                    </NavDropdown>
+                </Nav>
+                {localStorage.getItem("token") ?
+                    <Nav className="mx-2">
+                        <NavDropdown title={
+                            <b>{username} {user}</b>  
+                        }>
+                        <NavDropdown.Item href="/login" onClick={logOut}>Logout <FontAwesomeIcon icon={faSignOutAlt} /></NavDropdown.Item>
+                        </NavDropdown>   
+                    </Nav>
+                : null
+                }
+            </Navbar.Collapse>
+        </Navbar> 
+        
+    );
+}
+
+export default TopMenu;

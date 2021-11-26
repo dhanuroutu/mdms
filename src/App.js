@@ -32,7 +32,7 @@ function App() {
           <Route path="/dashboard" exact>
             <Dashboard addTitle={(name) => {setTitle(name)}}></Dashboard>
           </Route>
-          <Route path="/dailywork" component={Dailywork} exact>
+          <Route path="/dailylabour" component={Dailywork} exact>
             <Dailywork></Dailywork>
           </Route>
           <Route path="/employees" component={Employees} exact>

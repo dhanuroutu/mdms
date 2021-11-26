@@ -1,0 +1,17 @@
+.wrapper {
+  padding: 20px;
+}
+.title {
+  color: #FCFBF7;
+}
+.navbar-light .navbar-nav .nav-link {
+  color: #FFFBF7 !important;
+}
+.menu-link {
+  color: #FFFBF7 !important;
+  font-weight: 500;
+}
+.navbar-light .nav-link:hover {
+  background-color: rgb(240, 242, 247);
+  color: #44ABF0 !important;
+}
