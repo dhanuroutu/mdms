@@ -7,50 +7,58 @@ import Moment from 'moment';
 
 export default function Dailywork(props) {
 
-    const [employees, setEmployees] = useState([]);
-    const [dailyWorkList, setDailyWorkList] = useState([]);
-    const [values, setValues] = useState({});
+    const [values, setValues] = useState([]);
     const [date, setDate] = useState(Moment(new Date()).format('YYYY-MM-DD'));
     
+    const [enabledId, setEnabledId] = useState();
+    const [disableValues, setDisableValues] = useState({});
+
     let units;
 
   useEffect(() => {
     getAllDailyWorks();
-    // console.log('values ---------------- ',values);
-
   },[date]);
 
   const getAllDailyWorks = () => {
     service.getAllLabours(1).then((result) => {
-        setEmployees((prev)=>result.data);
-        // console.log('labour result :::: ',result.data);
-        // console.log(':::: values in getAllDailyWorks::::: ', values);
+        let employees = result.data;
+
+        service.getDailyworkByDate(Moment(date).format('DD-MM-YYYY')).then((result1) => {
+            let dailyWages = result1.data;
+            let dailyWageValues = [];
+            for(let i=0;i<employees.length;i++){
+                let isMatched = false;
+               
+                for(let j=0;j< dailyWages.length;j++){
+                    if(dailyWages[j].employeeId === employees[i].id){
+                        let obj = {
+                            wageId: dailyWages[j].wageId,
+                            employeeId: employees[i].id,
+                            numOfUnits: dailyWages[j].numOfUnits,
+                            date: new Date(date),
+                            name: employees[i].name,
+                            mode: "edit"
+                        };
+                        dailyWageValues.push(obj);
+                        isMatched = true;
+                        break;
+                    }
+                }
+                if(!isMatched){
+                    let obj = {
+                        employeeId:employees[i].id,
+                        numOfUnits: 0,
+                        date: new Date(date),
+                        name: employees[i].name,
+                        mode: "add"
+                    };
+                    dailyWageValues.push(obj);
+                }
+            }
+
+            setValues(dailyWageValues);
+        });
     });
-
-    service.getDailyworkByDate(Moment(date).format('DD-MM-YYYY')).then((result) => {
-        setDailyWorkList((prev)=>result.data);
-    });
-  }
-
-  const isDailyworkAvailable = (empId) => {
-
-    // const empValues = values[empId];
-    // if (empValues == undefined || empValues?.mode === 'add') {
-    //     return 0;
-    // } else {
-    //     return empValues.value;
-    // }
-
-    let numOfUnits = 0;
-    for(let i=0;i<dailyWorkList.length;i++){
-        if(dailyWorkList[i].employeeId === empId){
-            numOfUnits = dailyWorkList[i].numOfUnits;
-            break;
-        }
-    }
-    //console.log("Kgs:::"+kgs);
-    return numOfUnits;
-     
   }
 
   const handleChanges = (e) => {
@@ -60,60 +68,45 @@ export default function Dailywork(props) {
 
   const handleUnits = (e, empId) => {
     const {name, value} = e.target;
-    setValues(prev => {return {...prev, [empId]:{value:value, mode:'add'} }});
-    // console.log(':::: values ::::: ', values);
+    console.log("Value::::", value);
+    setValues ( (prevDailyWages) => {
+        for(let i = 0; i < prevDailyWages.length; i++) {
+            if(prevDailyWages[i].employeeId === empId){
+                prevDailyWages[i].numOfUnits = value;
+                prevDailyWages[i].mode = 'edit';
+                break;
+            }
+        }
+        return [...prevDailyWages];
+    });
+    
+    console.log('values:::', values);
   };
     
 
-  const handleSubmit = (empId) => {
-    let obj = {employeeId:empId, numOfUnits:values[empId].value, date: new Date(date)};
+  const handleSubmit = (emp) => {
+    let obj = {employeeId:emp.employeeId, numOfUnits:emp.numOfUnits, date: emp.date};
     // console.log(obj);
     service.addDailywork(obj).then(result => {
-        // console.log(result);
-        let employee = values[empId];
-        employee.mode = "edit";
-        setValues(prev => {return {...prev, [empId]:employee }});
         getAllDailyWorks();
     });
  }
 
- const updateDailywork = (empId) => {
-    let obj = {employeeId:empId, numOfUnits:values[empId].value, date: new Date(date)};
-    let id;
-    for(let i=0;i<dailyWorkList.length;i++){
-        if(dailyWorkList[i].employeeId === empId){
-            id = dailyWorkList[i].employeeId;
-            break;
-        }
-    }
-    obj["id"]=id;
-    service.addDailywork(obj).then(result => {
-        // console.log(result);
+ const updateDailywork = (emp) => {
+    let obj = {wageId: emp.wageId, employeeId:emp.employeeId, numOfUnits:emp.numOfUnits, date: emp.date};
+    service.updateDailywork(obj).then(result => {
+        setEnabledId(0);
     });
  }
 
- const [enabledId, setEnabledId] = useState();
- const [disableValues, setDisableValues] = useState({});
-
   const handleClick = (empId) => {
-      console.log('handleClick ::: ',empId);
-    setEnabledId(empId)
+    console.log('handleClick ::: ',empId);
+    setEnabledId(empId);
   };
 
-  const isDisabled = (empId) =>  {
-      //mode -> edit , 
-      
-      const empValues = values[empId];
-      if (empValues === undefined) {
-        for(let i=0;i<dailyWorkList.length;i++){
-            if(dailyWorkList[i].employeeId === empId){
-                const numOfUnits = dailyWorkList[i].numOfUnits;
-                
-                return numOfUnits > 0;
-            }
-        }
-      }
-      if(empValues?.mode === 'edit' &&  enabledId !== empId) {
+  const isDisabled = (emp) =>  {
+            
+      if(emp?.mode === 'edit' &&  enabledId !== emp.employeeId) {
           return true;
       } 
       return false;
@@ -142,27 +135,35 @@ export default function Dailywork(props) {
                     </tr>
                 </thead>
                 <tbody>
-                    { employees.map(employee =>{
+                    { values.map(employee =>{
                         return (
-                            <tr key={employee.id}>
+                            <tr key={employee.employeeId}>
                                 <td>{employee.name}</td>
                                 { 
-                                  isDailyworkAvailable(employee.id) > 0 ? 
+                                  (employee.numOfUnits) > 0 ? 
                                  (<>
                                     <td>
-                                        <div onDoubleClick={(e) => handleClick(employee.id)}>
-                                        <input type="text" name="noOfKgs" value={isDailyworkAvailable(employee.id)} onChange={(e) => handleUnits(e, employee.id)}   disabled={isDisabled(employee.id)} ></input>
+                                        <div onDoubleClick={(e) => handleClick(employee.employeeId)}>
+                                        <input type="text" name="numOfUnits" value={employee.numOfUnits} 
+                                        onChange={(e) => handleUnits(e, employee.employeeId)}   
+                                        disabled={isDisabled(employee)} ></input>
                                         </div>
                                         </td>
-                                    <td><button type="button" className="btn btn-success" onClick={e => updateDailywork(employee.id)} disabled={isDisabled(employee.id)} >Update</button></td>
+                                    <td>
+                                        <button type="button" className="btn btn-success" onClick={e => updateDailywork(employee)} 
+                                    disabled={isDisabled(employee)} >Update</button>
+                                    </td>
                                  </>) : 
                                  (<>
-                                    <td><input type="text" name="noOfKgs" value={(values[employee.id]?.value === undefined) ? "": values[employee.id].value} onChange={(e) => handleUnits(e, employee.id)}></input></td>
-                                    <td><button type="button" className="btn btn-success" onClick={e => handleSubmit(employee.id)}>Add</button></td>
+                                    <td>
+                                        <input type="text" name="numOfUnits" value={employee.numOfUnits === 0 ? "": employee.numOfUnits} 
+                                    onChange={(e) => handleUnits(e, employee.employeeId)}></input>
+                                    </td>
+                                    <td>
+                                        <button type="button" className="btn btn-success" onClick={e => handleSubmit(employee)}>Add</button>
+                                    </td>
                                  </>)
-                            }
-
-                                
+                            }                               
                             </tr>
                         );
                     })}

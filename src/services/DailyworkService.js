@@ -10,6 +10,10 @@ export var addDailywork = (dailyWages) => {
     return axios.post(BASE_URL+'api/dailyWages',dailyWages);
 }
 
+export var updateDailywork = (dailyWages) => {
+    return axios.put(BASE_URL+'api/dailyWages/'+dailyWages.wageId,dailyWages);
+}
+
 export var getDailyworkByDate = (date) => {
     return axios.get(BASE_URL+'api/dailyWages/date/'+date);
 }
